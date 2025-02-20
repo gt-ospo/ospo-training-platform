@@ -2,8 +2,22 @@ import subprocess
 import json
 import os
 
+def is_nbgrader_running():
+    """Checks if nbgrader is running in validation or auto-grading mode."""
+    current_dir = os.getcwd()
+    
+    # Check if student is manually validating or autograder is running
+    if os.getenv("NBGRADER_VALIDATING") == "1" or "autograded" in current_dir:
+        return True
+
+    return False
+
 def save_git_state(filename, test_name):
-    """Saves Git state for a specific test in the specified file."""
+    """Saves Git state only if nbgrader is NOT running."""
+    
+    if is_nbgrader_running():
+        return f"Skipped saving Git state for {test_name} (nbgrader execution)."
+        
     cwd = os.getcwd()
     hidden_dir = os.path.join(cwd, "../.git_states")
     os.makedirs(hidden_dir, exist_ok=True)
