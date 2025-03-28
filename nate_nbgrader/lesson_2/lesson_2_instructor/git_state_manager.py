@@ -18,8 +18,9 @@ def save_git_state(filename, test_name):
     if is_nbgrader_running():
         return f"Skipped saving Git state for {test_name} (nbgrader execution)."
         
-    cwd = os.getcwd()
-    hidden_dir = os.path.join(cwd, "../.git_states")
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    hidden_dir = os.path.join(module_dir, ".git_states")
+    
     os.makedirs(hidden_dir, exist_ok=True)
     filename = os.path.join(hidden_dir, filename)
 
@@ -60,8 +61,9 @@ def save_git_state(filename, test_name):
 
 def load_git_state(filename, test_name):
     """Loads stored git state for a specific test in a given file."""
-    cwd = os.getcwd()
-    hidden_dir = os.path.join(cwd, "../.git_states")
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    hidden_dir = os.path.join(module_dir, ".git_states")
+
     filename = os.path.join(hidden_dir, filename)
 
     if not os.path.exists(filename):
@@ -74,3 +76,70 @@ def load_git_state(filename, test_name):
         raise ValueError(f"No Git state found for test '{test_name}'!")
 
     return all_states[test_name]
+
+
+def save_git_checkpoint(sublesson_name):
+    """Saves a full checkpoint of the Git repository state at the beginning of a sublesson."""
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    hidden_dir = os.path.join(module_dir, ".git_states")
+    os.makedirs(hidden_dir, exist_ok=True)
+
+    filename = os.path.join(hidden_dir, f"{sublesson_name}_checkpoint.json")
+    print(filename)
+
+    # Capture repo state
+    git_state = {
+        "branches": subprocess.getoutput("git branch --format='%(refname:short)'").split("\n"),
+        "current_branch": subprocess.getoutput("git rev-parse --abbrev-ref HEAD"),
+        "commit": subprocess.getoutput("git rev-parse HEAD"),
+        "staged_files": subprocess.getoutput("git diff --name-only --cached").split("\n"),
+        "unstaged_files": subprocess.getoutput("git diff --name-only").split("\n"),
+        "untracked_files": subprocess.getoutput("git ls-files --others --exclude-standard").split("\n"),
+        "last_5_commits": subprocess.getoutput("git log --oneline -5").split("\n"),
+        "diff_summary": subprocess.getoutput("git diff --stat"),
+        "remote_branch": subprocess.getoutput("git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null"),
+        "remote_commit": subprocess.getoutput("git log --oneline -1 origin/main 2>/dev/null")
+    }
+
+    # Save checkpoint
+    with open(filename, "w") as f:
+        json.dump(git_state, f, indent=4)
+
+    return f"Saved checkpoint for {sublesson_name}."
+
+
+def restore_git_checkpoint(sublesson_name):
+    """Restores the Git repository state from a saved checkpoint."""
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    hidden_dir = os.path.join(module_dir, ".git_states")
+    filename = os.path.join(hidden_dir, f"{sublesson_name}_checkpoint.json")
+
+    if not os.path.exists(filename):
+        raise ValueError(f"No checkpoint found for {sublesson_name}.")
+
+    with open(filename, "r") as f:
+        checkpoint = json.load(f)
+
+    print(f"Restoring Git checkpoint for {sublesson_name}...")
+
+    existing_branches = subprocess.getoutput("git branch --format='%(refname:short)'").split("\n")
+    for branch in checkpoint["branches"]:
+        if branch not in existing_branches:
+            subprocess.run(["git", "branch", branch], check=True)
+
+    subprocess.run(["git", "checkout", checkpoint["current_branch"]], check=True)
+
+    subprocess.run(["git", "reset", "--hard", checkpoint["commit"]], check=True)
+
+    if checkpoint["staged_files"]:
+        subprocess.run(["git", "add"] + checkpoint["staged_files"], check=True)
+
+    if checkpoint["unstaged_files"]:
+        subprocess.run(["git", "checkout", "--"] + checkpoint["unstaged_files"], check=True)
+
+    for file in checkpoint["untracked_files"]:
+        if file.strip():  # Ensure we don't add empty filenames
+            subprocess.run(["git", "checkout", "--", file], check=True)
+
+    return f"Restored Git checkpoint for {sublesson_name}."
+
