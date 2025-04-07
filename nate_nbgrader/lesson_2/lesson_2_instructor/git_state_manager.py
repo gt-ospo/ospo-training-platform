@@ -85,27 +85,29 @@ def save_git_checkpoint(sublesson_name):
     os.makedirs(hidden_dir, exist_ok=True)
 
     filename = os.path.join(hidden_dir, f"{sublesson_name}_checkpoint.json")
-    print(filename)
 
-    # Capture repo state
+    # Save each branch and its corresponding commit
+    branches = subprocess.getoutput("git branch --format='%(refname:short)'").split("\n")
+    branch_commits = {}
+    for branch in branches:
+        commit = subprocess.getoutput(f"git rev-parse {branch}")
+        branch_commits[branch] = commit
+
     git_state = {
-        "branches": subprocess.getoutput("git branch --format='%(refname:short)'").split("\n"),
+        "branches": branch_commits,
         "current_branch": subprocess.getoutput("git rev-parse --abbrev-ref HEAD"),
-        "commit": subprocess.getoutput("git rev-parse HEAD"),
         "staged_files": subprocess.getoutput("git diff --name-only --cached").split("\n"),
         "unstaged_files": subprocess.getoutput("git diff --name-only").split("\n"),
         "untracked_files": subprocess.getoutput("git ls-files --others --exclude-standard").split("\n"),
-        "last_5_commits": subprocess.getoutput("git log --oneline -5").split("\n"),
         "diff_summary": subprocess.getoutput("git diff --stat"),
         "remote_branch": subprocess.getoutput("git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null"),
         "remote_commit": subprocess.getoutput("git log --oneline -1 origin/main 2>/dev/null")
     }
 
-    # Save checkpoint
     with open(filename, "w") as f:
         json.dump(git_state, f, indent=4)
 
-    return f"Saved checkpoint for {sublesson_name}."
+    return f"Saved checkpoint for '{sublesson_name}'."
 
 
 def restore_git_checkpoint(sublesson_name):
@@ -115,31 +117,41 @@ def restore_git_checkpoint(sublesson_name):
     filename = os.path.join(hidden_dir, f"{sublesson_name}_checkpoint.json")
 
     if not os.path.exists(filename):
-        raise ValueError(f"No checkpoint found for {sublesson_name}.")
+        raise ValueError(f"No checkpoint found for '{sublesson_name}'.")
 
     with open(filename, "r") as f:
         checkpoint = json.load(f)
 
-    print(f"Restoring Git checkpoint for {sublesson_name}...")
+    print(f"Restoring Git checkpoint for '{sublesson_name}'...")
+
+    # Step 1: Clean working directory (remove all local changes, including untracked files)
+    subprocess.run(["git", "reset", "--hard"], check=True)
+    subprocess.run(["git", "clean", "-fd"], check=True)
 
     existing_branches = subprocess.getoutput("git branch --format='%(refname:short)'").split("\n")
-    for branch in checkpoint["branches"]:
-        if branch not in existing_branches:
-            subprocess.run(["git", "branch", branch], check=True)
+    checkpoint_branches = checkpoint["branches"]
 
+    # Step 2: Restore branches to exact commits
+    for branch, commit in checkpoint_branches.items():
+        if branch == checkpoint["current_branch"]:
+            continue
+        elif branch in existing_branches:
+            subprocess.run(["git", "branch", "-f", branch, commit], check=True)
+        else:
+            subprocess.run(["git", "branch", branch, commit], check=True)
+        print(f"Set branch '{branch}' to {commit}")
+
+    # Step 3: Checkout the checkpoint branch and reset to saved commit
     subprocess.run(["git", "checkout", checkpoint["current_branch"]], check=True)
+    subprocess.run(["git", "reset", "--hard", checkpoint_branches[checkpoint["current_branch"]]], check=True)
+    print(f"Checked out and reset to branch '{checkpoint['current_branch']}'")
 
-    subprocess.run(["git", "reset", "--hard", checkpoint["commit"]], check=True)
+    # Step 4: Now delete any branches not in the checkpoint
+    updated_branches = subprocess.getoutput("git branch --format='%(refname:short)'").split("\n")
+    for branch in updated_branches:
+        if branch not in checkpoint_branches:
+            subprocess.run(["git", "branch", "-D", branch], check=True)
+            print(f"Removed branch: {branch}")
 
-    if checkpoint["staged_files"]:
-        subprocess.run(["git", "add"] + checkpoint["staged_files"], check=True)
-
-    if checkpoint["unstaged_files"]:
-        subprocess.run(["git", "checkout", "--"] + checkpoint["unstaged_files"], check=True)
-
-    for file in checkpoint["untracked_files"]:
-        if file.strip():  # Ensure we don't add empty filenames
-            subprocess.run(["git", "checkout", "--", file], check=True)
-
-    return f"Restored Git checkpoint for {sublesson_name}."
+    return f"Restored Git checkpoint for '{sublesson_name}'."
 
