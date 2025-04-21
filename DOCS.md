@@ -76,3 +76,81 @@ git commit -m "finished the task"
 1. Parses the `filename.json`, and `test_name`.
 2. Runs each command line by line, ignoring any boilerplate code such as `# YOUR CODE HERE`.
 3. Saves the current git state to the `.git_states/` folder so that tests can retrieve this information.
+
+
+# File Checkpointing with `file_state_manager.py`
+
+
+We use **checkpointing of files** during Git-based lessons using Python function calls. It supports saving and restoring versions of specified files at designated lesson and checkpoint stages, useful for backtracking progress.
+
+---
+
+### Features
+
+- Saves current file versions to a uniquely named folder per checkpoint
+- Stores metadata about each checkpoint in `metadata.json`
+- Restores files using saved versions
+- Hosted in a customizable repo directory (via `repo_path`). Generally will not change per user.
+
+---
+
+### Checkpoint Folder Naming
+
+Each checkpoint is stored under:
+```
+{repo_path}/lesson_{lesson}_checkpoint_{checkpoint}/
+```
+
+For example:
+```
+lesson_1_checkpoint_final/
+├── git_folder/my_abs.py
+└── metadata.json
+```
+
+> If no changes are made to the repo_path, everything should work as expected.
+
+---
+
+### Usage Example
+
+```python
+from file_state_manager import save_state, load_state
+
+# Save file state
+save_state(["git_folder/my_abs.py"], "1", "final")
+
+# Load previously saved state
+load_state("1", "final")
+```
+
+---
+
+### Function Reference
+
+#### `save_state(files: List[str], lesson: str, checkpoint: str)`
+
+- **Description**: Saves the specified list of files into folder named `lesson_{lesson}_checkpoint_{checkpoint}`..
+- **Parameters**:
+  - `files`: List of file paths to save
+  - `lesson`: lesson number
+  - `checkpoint`: section within lesson
+
+#### `load_state(lesson: str, checkpoint: str) -> bool`
+
+- **Description**: Restores file states from previous checkpoint
+- **Returns**: `True` if successful, `False` if no state was found
+- **Warning**: Fully Overwrites existing files.
+
+---
+
+### Metadata Tracking
+
+Each checkpoint folder includes a `metadata.json` file like:
+```json
+{
+    "lesson": "1",
+    "checkpoint": "final",
+    "files": ["git_folder/my_abs.py"]
+}
+```
