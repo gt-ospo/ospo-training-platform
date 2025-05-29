@@ -1,6 +1,12 @@
 For Contributors
 ================
 
+# Proper Contribution Etiquette
+
+1. Fork the repository.
+2. Make changes to the repository on your own fork.
+3. Submit a pull request and make sure to assign Ron as the reviewer. 
+
 # Internal Developer: Git Course (nbgrader + Git Magics)
 
 This repository and configuration power the `git_course_test` course hosted on our shared JupyterHub environment. It integrates `nbgrader` with custom Git magic commands for teaching Git workflows interactively.
