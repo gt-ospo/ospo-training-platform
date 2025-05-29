@@ -1,3 +1,6 @@
+For Contributors
+================
+
 # Internal Developer: Git Course (nbgrader + Git Magics)
 
 This repository and configuration power the `git_course_test` course hosted on our shared JupyterHub environment. It integrates `nbgrader` with custom Git magic commands for teaching Git workflows interactively.
