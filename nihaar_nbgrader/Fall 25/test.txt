@@ -1,0 +1,1 @@
+In hindsight probably should have done verything in one notbeook. Order is Init - status - add_files - stage - status_v2 - commit.
