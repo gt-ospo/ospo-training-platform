@@ -29,6 +29,8 @@ html_static_path = ['_static']
 html_theme_options = {
     'logo': 'logo.png',
     # 'github_user': 'sphinx-doc',
+    'sidebar_collapse': True,
     'github_repo': 'https://github.com/gt-ospo/ospo-training-platform',
     'fixed_sidebar': True,
+    'html_show_sphinx': True,
 }
