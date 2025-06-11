@@ -23,7 +23,6 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 .. toctree::
    :maxdepth: 2
-
    usage/installation
    usage/deployment
    usage/contributors
