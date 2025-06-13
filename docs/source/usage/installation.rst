@@ -1,4 +1,9 @@
 How to Install?
 ===============
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+1. pip install nbgrader
+2. nbgrader quickstart ospo-training
+3. Create [Exchange directory](https://nbgrader.readthedocs.io/en/latest/user_guide/managing_assignment_files.html)
+4. Jupyter lab inside course directory shows assignments;
+    Jupyter lab in parent directory of course directory doesn't show assignments (even if there is nbgrader_config.py pointing to course directory)
+5. In Jupyter lab, go to the Nbgrader tab, then Course List to edit assignments. 
