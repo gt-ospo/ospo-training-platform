@@ -25,7 +25,6 @@ Hello World
 
 .. toctree::
    :maxdepth: 2
-
    
    usage/installation
    usage/deployment
